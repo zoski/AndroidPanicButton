@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Panic Button</string>
+    <string name="panic">PANIQUE</string>
+    <string name="message">Restez calme. Message envoyé.</string>
+</resources>

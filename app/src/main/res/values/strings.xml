@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Panic Button</string>
+    <string name="panic">PANIC</string>
+    <string name="message">Keep calm and drink tea</string>
+</resources>
