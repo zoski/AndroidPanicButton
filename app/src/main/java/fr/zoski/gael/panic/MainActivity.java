@@ -1,30 +1,26 @@
 package fr.zoski.gael.panic;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 
-import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_10;
-import org.java_websocket.handshake.ServerHandshake;
+
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
-public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
 
@@ -35,45 +31,32 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private SocketClient socketClient;
     private URI uri;
 
+    private static String SERVER_URI = "ws://192.168.43.19:9555";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
-        //StrictMode.setThreadPolicy(policy);
-
-        /* Getting GPS position */
+        /* Getting GPS position throw Google API*/
         buildGoogleApiClient();
         mGoogleApiClient.connect();
 
         /* WebSocket things */
         if(isNetworkAvailable()) {
             System.out.println("Network available");
-            try{
-                uri = new URI("ws://zoski.fr:9555");
-                System.out.println("Socket created : " + uri.toString());
-            } catch(URISyntaxException e) {
-                e.printStackTrace();
-            }
-
-            socketClient = new SocketClient(uri, new Draft_10() );
-            System.out.println("Go .connect()");
-            socketClient.connect();
-            System.out.println("Socket is connecting :" + socketClient.isConnecting() + "\nSocket is open :" + socketClient.isOpen());
+            connect();
         }
         else {
             Toast.makeText(this, "Network un available", Toast.LENGTH_SHORT).show();
         }
-
-
     }
 
     public void onClick(View view) {
         /* Contacting server */
         System.out.println("Trying to send message " + msg);
-        if(socketClient.isOpen()!=true) {
-            Toast.makeText(this, "Not connected, can't send message", Toast.LENGTH_SHORT).show();
+        if(socketClient.isOpen()) {
+            Toast.makeText(this, "Not connected, can't send message\n Trying to reconnect", Toast.LENGTH_SHORT).show();
+            connect();
         }
         else {
             socketClient.send(msg);
@@ -82,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
 
-    protected synchronized void buildGoogleApiClient() {
+    private synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -124,15 +107,31 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         System.out.println("Connection failed");
     }
 
-    public boolean isNetworkAvailable() {
+    private boolean isNetworkAvailable() {
         ConnectivityManager cm = (ConnectivityManager)
                 getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = cm.getActiveNetworkInfo();
         // if no network is available networkInfo will be null
         // otherwise check if we are connected
-        if (networkInfo != null && networkInfo.isConnected()) {
-            return true;
+        return networkInfo != null && networkInfo.isConnected();
+    }
+
+    /**
+        Does the connection part.
+     Create an URI, then a socket and open a connection with the remote server.
+     */
+    private void connect() {
+        try {
+            uri = new URI(SERVER_URI);
+            System.out.println("Socket created : " + uri.toString());
+        } catch(URISyntaxException e) {
+            e.printStackTrace();
         }
-        return false;
+
+        socketClient = new SocketClient(uri, new Draft_10() );
+        System.out.println("Go .connect()");
+        socketClient.connect();
+        System.out.println("Socket is connecting :" + socketClient.isConnecting() +
+                "\nSocket is open :" + socketClient.isOpen());
     }
 }
